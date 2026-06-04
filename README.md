@@ -104,6 +104,69 @@ python3 ./example.py   # simple getting-started example
 python3 ./demo.py      # comprehensive demo (130+ API methods)
 ```
 
+## Health dashboard — one-time setup
+
+This repo includes scripts to generate weekly/monthly Garmin health dashboards (email-friendly HTML by default). Full usage is in [GARMIN_EXPORT.md](GARMIN_EXPORT.md).
+
+### 1. Python 3.12+
+
+macOS:
+
+```bash
+brew install python@3.12
+```
+
+### 2. Virtual environment and Python packages
+
+```bash
+cd python-garminconnect-master   # or your clone path
+python3.12 -m venv .venv
+source .venv/bin/activate        # Windows: .venv\Scripts\activate
+pip install -e ".[example]"
+```
+
+### 3. Cairo (required for email-format chart images)
+
+The default email HTML embeds dashboard charts as PNG images. **macOS** needs the Cairo library once:
+
+```bash
+brew install cairo
+```
+
+Linux (Debian/Ubuntu):
+
+```bash
+sudo apt update && sudo apt install libcairo2-dev pkg-config
+```
+
+Then ensure the Python package is installed (included in `[example]`):
+
+```bash
+pip install cairosvg
+```
+
+Without Cairo, `--format email` still runs but charts show a “install cairosvg” placeholder. `--format dashboard` (browser SVG) does not need Cairo.
+
+### 4. Garmin login (once)
+
+```bash
+source .venv/bin/activate
+python3 example.py
+```
+
+Tokens are saved to `~/.garminconnect/garmin_tokens.json`. Re-run if login expires.
+
+### 5. Run script
+
+```bash
+chmod +x run_dashboard.sh
+./run_dashboard.sh weekly    # email HTML — last Mon–Sun
+./run_dashboard.sh monthly   # email HTML — previous calendar month
+./run_dashboard.sh weekly --format dashboard   # browser SVG version
+```
+
+Output: `your_data/dashboards/` (`weekly_*.html`, `monthly_*.html`, or `*_dashboard.html`).
+
 ## 🛠️ Development
 
 This project uses [PDM](https://pdm.fming.dev/) for dependency management and task automation.

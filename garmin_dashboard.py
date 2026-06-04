@@ -8,9 +8,8 @@ Modes:
 
 Usage:
     source .venv/bin/activate
-    python3 garmin_dashboard.py --mode monthly
-    python3 garmin_dashboard.py --mode weekly
-    python3 garmin_dashboard.py --mode auto --open
+    python3 garmin_dashboard.py --mode monthly              # email HTML (default)
+    python3 garmin_dashboard.py --mode weekly --format dashboard --open
 
 Requires tokens from example.py. Reuses your_data/*/daily_stats.json when available.
 """
@@ -665,11 +664,15 @@ def _hrv_status_color(status: str | None) -> str:
     return COLOR_NEUTRAL
 
 
-def output_name(mode: str, start: date, end: date) -> str:
+def output_name(mode: str, start: date, end: date, fmt: str = "email") -> str:
     if mode == "monthly":
-        return f"monthly_{start.strftime('%Y_%m')}.html"
-    iso = start.isocalendar()
-    return f"weekly_{iso.year}_W{iso.week:02d}.html"
+        base = f"monthly_{start.strftime('%Y_%m')}.html"
+    else:
+        iso = start.isocalendar()
+        base = f"weekly_{iso.year}_W{iso.week:02d}.html"
+    if fmt == "dashboard":
+        return base.replace(".html", "_dashboard.html")
+    return base
 
 
 def _avg(values: list[float | int | None]) -> float | None:
@@ -1683,6 +1686,12 @@ def main() -> None:
         action="store_true",
         help="Force fetch from Garmin even if cached daily_stats.json exists",
     )
+    parser.add_argument(
+        "--format",
+        choices=["email", "dashboard"],
+        default="email",
+        help="email=Gmail-compatible HTML (default); dashboard=browser SVG charts",
+    )
     args = parser.parse_args()
 
     ref = date.fromisoformat(args.date) if args.date else date.today()
@@ -1712,14 +1721,21 @@ def main() -> None:
     rows = extract_metrics(raw_days, training_by_day)
     period_avg_rhr = avg_rhr(rows)
     activity_summary = analyze_activities(activities, rows)
-    html = build_dashboard_html(
-        mode, start, end, rows, period_avg_rhr, activity_summary
-    )
+    if args.format == "dashboard":
+        html = build_dashboard_html(
+            mode, start, end, rows, period_avg_rhr, activity_summary
+        )
+    else:
+        from garmin_email_html import build_email_html
+
+        html = build_email_html(
+            mode, start, end, rows, period_avg_rhr, activity_summary
+        )
 
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
-    out_path = OUTPUT_DIR / output_name(mode, start, end)
+    out_path = OUTPUT_DIR / output_name(mode, start, end, args.format)
     out_path.write_text(html, encoding="utf-8")
-    print(f"Dashboard saved: {out_path.resolve()}")
+    print(f"Dashboard saved ({args.format}): {out_path.resolve()}")
 
     if args.open:
         webbrowser.open(out_path.resolve().as_uri())

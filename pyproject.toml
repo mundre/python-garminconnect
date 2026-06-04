@@ -97,6 +97,7 @@ testing = [
 ]
 example = [
     "readchar",
+    "cairosvg>=2.7",
 ]
 
 [tool.pdm]

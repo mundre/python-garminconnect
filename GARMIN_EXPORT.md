@@ -13,22 +13,30 @@ After [one-time setup](#one-time-setup-new-computer):
 ./run_dashboard.sh monthly   # previous calendar month — run on the 1st
 ```
 
-Output is always a **single HTML file** under `your_data/dashboards/`:
+Output is a **single HTML file** under `your_data/dashboards/`:
 
-| Mode | Example file |
-|------|----------------|
-| weekly | `your_data/dashboards/weekly_2026_W22.html` |
-| monthly | `your_data/dashboards/monthly_2026_05.html` |
+| Mode | Email format (default) | Browser format |
+|------|------------------------|----------------|
+| weekly | `weekly_2026_W22.html` | `weekly_2026_W22_dashboard.html` |
+| monthly | `monthly_2026_05.html` | `monthly_2026_05_dashboard.html` |
 
-The script prints the full path when done. Attach that file to an email, or paste/import the HTML into your mail tool however you prefer.
+**Default (`--format email`):** Same dark Grafana-style dashboard as the browser version — charts are rendered as **embedded PNG images** (Gmail-safe). Tables and stat cards use inline styles on a dark theme.
 
-Equivalent Python (same result):
+**Browser (`--format dashboard`):** Live SVG charts for local viewing.
+
+```bash
+./run_dashboard.sh monthly                              # email format (default)
+./run_dashboard.sh weekly --format dashboard          # browser SVG charts
+python3 garmin_dashboard.py --mode monthly --format dashboard --open   # browser preview
+```
+
+Equivalent Python:
 
 ```bash
 source .venv/bin/activate
-python3 garmin_dashboard.py --mode weekly --fetch
-python3 garmin_dashboard.py --mode monthly --fetch
-python3 garmin_dashboard.py --mode auto --fetch   # weekly on Mon, monthly on 1st
+python3 garmin_dashboard.py --mode weekly --fetch              # email (default)
+python3 garmin_dashboard.py --mode monthly --fetch --format dashboard
+python3 garmin_dashboard.py --mode auto --fetch
 ```
 
 ---
@@ -57,6 +65,14 @@ python3.12 -m venv .venv
 source .venv/bin/activate
 pip install -e ".[example]"
 ```
+
+**macOS — chart images for email format:** install Cairo once so SVG charts can be converted to PNG:
+
+```bash
+brew install cairo
+```
+
+Then reinstall: `pip install -e ".[example]"` (includes `cairosvg`).
 
 ### 4. Garmin login (once)
 
@@ -106,15 +122,17 @@ Confirm HTML files appear in `your_data/dashboards/`.
 
 ---
 
-## Using the HTML in email
+## Using the HTML in Gmail
 
-The dashboard is **self-contained static HTML** (no JavaScript, no CDN). Options:
+The default **email format** matches the browser dashboard visually:
 
-1. **Attach the file** — recipients open `monthly_2026_05.html` in a browser.
-2. **Drag into mail** — some clients embed or attach HTML correctly.
-3. **Automate elsewhere** — point your own mail script at the path printed by `run_dashboard.sh`.
+- Dark theme (`#0b0c0e` background, same colors as dashboard)
+- Charts exported as **inline PNG images** (same SVG charts as `--format dashboard`)
+- Tables and stat cards with inline styles (no CSS grid/flex/variables)
 
-There is no built-in SMTP sender in this project; you control how the HTML is delivered.
+**Gmail note:** embedded images use `data:image/png;base64,...`. Most clients display these; if Gmail strips them when pasting, attach the `.html` file or send via an HTML-capable mail tool.
+
+For interactive SVG charts locally: `./run_dashboard.sh weekly --format dashboard`
 
 ---
 
@@ -127,7 +145,8 @@ There is no built-in SMTP sender in this project; you control how the HTML is de
 | Cached daily data | `your_data/YYYY_MM/daily_stats.json` |
 | Training cache | `your_data/YYYY_MM/training_metrics.json` |
 | Activities | `your_data/YYYY_MM/activities.json` |
-| **Dashboard output** | `your_data/dashboards/weekly_YYYY_Www.html` or `monthly_YYYY_MM.html` |
+| **Dashboard output (email)** | `your_data/dashboards/monthly_YYYY_MM.html` |
+| **Dashboard output (browser)** | `your_data/dashboards/monthly_YYYY_MM_dashboard.html` |
 
 ---
 
@@ -136,7 +155,8 @@ There is no built-in SMTP sender in this project; you control how the HTML is de
 | Script | Purpose |
 |--------|---------|
 | **`run_dashboard.sh`** | **Main entry:** `./run_dashboard.sh weekly\|monthly` |
-| `garmin_dashboard.py` | Build dashboard (`--mode weekly\|monthly\|auto`, `--fetch`) |
+| `garmin_dashboard.py` | Build dashboard (`--format email\|dashboard`, `--mode`, `--fetch`) |
+| `garmin_email_html.py` | Email-format HTML renderer (used internally) |
 | `example.py` | Login + sanity check |
 | `download_last_month.py` | Full export (daily stats + GPX) |
 | `download_last_month_lite.py` | Lite export |
@@ -145,9 +165,11 @@ There is no built-in SMTP sender in this project; you control how the HTML is de
 
 ## Dashboard features
 
-Static HTML — works in any browser.
+Static HTML — no JavaScript.
 
-**Panels:** stat cards, steps, resting HR, active calories, sleep, endurance + HRV, recovery/stress trends, training status, activity fitness impact, activity tables, daily breakdown. Weekend shading on charts.
+**Email format:** same panels as dashboard; charts as embedded PNG images on dark theme.
+
+**Dashboard format:** same metrics with live SVG charts.
 
 ---
 
@@ -168,6 +190,7 @@ Output: `your_data/YYYY_MM/` with GPX files (~1 min).
 |---------|-----|
 | Login fails | Run `python3 example.py` again; check MFA |
 | Empty dashboard | Run with `--fetch`; check tokens |
+| Charts missing in email HTML | macOS: `brew install cairo` then `pip install cairosvg` |
 | Rate limits | Retry later; scripts sleep between API calls |
 
 ---
