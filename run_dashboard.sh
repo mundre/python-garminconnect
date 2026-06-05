@@ -2,15 +2,15 @@
 # Fetch Garmin data and generate a dashboard HTML file.
 #
 # Usage:
-#   ./run_dashboard.sh weekly              # email format (default)
-#   ./run_dashboard.sh monthly             # email format (default)
-#   ./run_dashboard.sh weekly --format dashboard
+#   ./run_dashboard.sh weekly              # SVG dashboard (default, no Cairo)
+#   ./run_dashboard.sh monthly
+#   ./run_dashboard.sh weekly --format email_dashboard   # PNG for Gmail (needs Cairo)
 #
 set -euo pipefail
 
 usage() {
   echo "Usage: $0 weekly|monthly [garmin_dashboard.py options...]" >&2
-  echo "  e.g. $0 weekly --format dashboard" >&2
+  echo "  e.g. $0 weekly --format email_dashboard" >&2
   exit 1
 }
 

@@ -15,28 +15,135 @@ After [one-time setup](#one-time-setup-new-computer):
 
 Output is a **single HTML file** under `your_data/dashboards/`:
 
-| Mode | Email format (default) | Browser format |
-|------|------------------------|----------------|
-| weekly | `weekly_2026_W22.html` | `weekly_2026_W22_dashboard.html` |
-| monthly | `monthly_2026_05.html` | `monthly_2026_05_dashboard.html` |
+| Mode | Default (`dashboard`) | Gmail PNG (`email_dashboard`) |
+|------|-------------------------|-------------------------------|
+| weekly | `weekly_2026_W22.html` | `weekly_2026_W22_email.html` |
+| monthly | `monthly_2026_05.html` | `monthly_2026_05_email.html` |
 
-**Default (`--format email`):** Same dark Grafana-style dashboard as the browser version — charts are rendered as **embedded PNG images** (Gmail-safe). Tables and stat cards use inline styles on a dark theme.
+**Default (`--format dashboard`):** Dark Grafana-style HTML with **inline SVG charts** — same panels and styling as the full dashboard. **No Cairo required.** Open in a browser; copy/paste into Gmail may not render SVG charts (use `email_dashboard` for that).
 
-**Browser (`--format dashboard`):** Live SVG charts for local viewing.
+**Gmail (`--format email_dashboard`):** Same layout with charts as **embedded PNG images** (needs `cairosvg` + Cairo). `--format email` is an alias.
 
 ```bash
-./run_dashboard.sh monthly                              # email format (default)
-./run_dashboard.sh weekly --format dashboard          # browser SVG charts
-python3 garmin_dashboard.py --mode monthly --format dashboard --open   # browser preview
+./run_dashboard.sh monthly                                    # SVG dashboard (default)
+./run_dashboard.sh weekly --format email_dashboard            # PNG for Gmail
+python3 garmin_dashboard.py --mode monthly --fetch --open     # open default in browser
 ```
 
 Equivalent Python:
 
 ```bash
 source .venv/bin/activate
-python3 garmin_dashboard.py --mode weekly --fetch              # email (default)
-python3 garmin_dashboard.py --mode monthly --fetch --format dashboard
+python3 garmin_dashboard.py --mode weekly --fetch                    # SVG (default)
+python3 garmin_dashboard.py --mode monthly --fetch --format email_dashboard
 python3 garmin_dashboard.py --mode auto --fetch
+```
+
+---
+
+## One-time setup — macOS (complete)
+
+Copy-paste these steps on a new Mac. Total time ~10 minutes.
+
+### Step 1: Homebrew (skip if you already have it)
+
+```bash
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+```
+
+After install, follow the “Next steps” Homebrew prints (add `brew` to your PATH). Then:
+
+```bash
+brew --version
+```
+
+### Step 2: Install Python 3.12
+
+```bash
+brew install python@3.12 git
+```
+
+**Cairo is only needed for `--format email_dashboard`** (PNG charts for Gmail). The default SVG dashboard does not require it.
+
+Verify Python:
+
+```bash
+python3.12 --version    # should show 3.12.x
+```
+
+### Step 3: Clone the project
+
+```bash
+cd ~/personal_github   # or wherever you keep projects
+git clone https://github.com/mundre/python-garminconnect.git python-garminconnect-master
+cd python-garminconnect-master
+```
+
+Or copy the folder from another Mac (do **not** copy `.venv` — recreate it).
+
+### Step 4: Python virtual environment
+
+```bash
+python3.12 -m venv .venv
+source .venv/bin/activate
+pip install --upgrade pip
+pip install -e ".[example]"
+```
+
+For Gmail PNG charts (`--format email_dashboard`), also install Cairo:
+
+```bash
+brew install cairo
+python3 -c "import cairosvg; print('cairosvg ok')"
+```
+
+### Step 5: Garmin login (once)
+
+```bash
+source .venv/bin/activate
+python3 example.py
+```
+
+- Enter Garmin email and password (and MFA code if prompted).
+- Tokens saved to `~/.garminconnect/garmin_tokens.json`.
+
+**Alternative:** copy tokens from your other Mac:
+
+```bash
+mkdir -p ~/.garminconnect
+scp other-mac:~/.garminconnect/garmin_tokens.json ~/.garminconnect/
+```
+
+### Step 6: Enable and test the run script
+
+```bash
+chmod +x run_dashboard.sh
+./run_dashboard.sh weekly
+./run_dashboard.sh monthly
+```
+
+Check output:
+
+```bash
+ls -la your_data/dashboards/
+open your_data/dashboards/weekly_*.html    # default SVG dashboard
+```
+
+Charts should render as SVG in the browser. For Gmail PNG charts: `./run_dashboard.sh weekly --format email_dashboard` (requires Cairo).
+
+### Step 7: Ongoing use
+
+```bash
+cd ~/personal_github/python-garminconnect-master
+source .venv/bin/activate   # each new terminal session
+./run_dashboard.sh weekly   # run on Mondays
+./run_dashboard.sh monthly  # run on the 1st of the month
+```
+
+Gmail PNG version (optional, needs Cairo):
+
+```bash
+./run_dashboard.sh weekly --format email_dashboard
 ```
 
 ---
@@ -66,10 +173,20 @@ source .venv/bin/activate
 pip install -e ".[example]"
 ```
 
-**macOS — chart images for email format:** install Cairo once so SVG charts can be converted to PNG:
+**macOS — only for `--format email_dashboard`:** install Cairo so SVG charts can be converted to PNG:
 
 ```bash
 brew install cairo
+```
+
+**Linux (Debian/Ubuntu)** — for `--format email_dashboard`, install system libs first:
+
+```bash
+sudo apt update
+sudo apt install -y \
+  libcairo2-dev libpango1.0-dev libgdk-pixbuf-2.0-dev libffi-dev pkg-config \
+  libx11-dev libxrender-dev libxext-dev libxcb-render0-dev libxcb-shm0-dev \
+  libjpeg-dev libpng-dev
 ```
 
 Then reinstall: `pip install -e ".[example]"` (includes `cairosvg`).
@@ -111,9 +228,10 @@ Confirm HTML files appear in `your_data/dashboards/`.
 
 ## Replication checklist
 
-- [ ] Install Python 3.12+
-- [ ] Clone/copy project directory
+- [ ] macOS: `brew install python@3.12 git` (+ `cairo` only if using `email_dashboard`)
+- [ ] Clone: `git clone https://github.com/mundre/python-garminconnect.git`
 - [ ] `python3.12 -m venv .venv && source .venv/bin/activate && pip install -e ".[example]"`
+- [ ] (Optional) Verify PNG charts: `python3 -c "import cairosvg; print('ok')"`
 - [ ] Run `python3 example.py` (or copy `~/.garminconnect/garmin_tokens.json`)
 - [ ] `chmod +x run_dashboard.sh`
 - [ ] Test: `./run_dashboard.sh weekly` and `./run_dashboard.sh monthly`
@@ -124,15 +242,21 @@ Confirm HTML files appear in `your_data/dashboards/`.
 
 ## Using the HTML in Gmail
 
-The default **email format** matches the browser dashboard visually:
+**Default dashboard** (`weekly_*.html`) uses inline SVG — great in a browser; Gmail may not show charts when you paste.
 
-- Dark theme (`#0b0c0e` background, same colors as dashboard)
-- Charts exported as **inline PNG images** (same SVG charts as `--format dashboard`)
-- Tables and stat cards with inline styles (no CSS grid/flex/variables)
+**Gmail PNG format** — generate with `--format email_dashboard`:
 
-**Gmail note:** embedded images use `data:image/png;base64,...`. Most clients display these; if Gmail strips them when pasting, attach the `.html` file or send via an HTML-capable mail tool.
+```bash
+./run_dashboard.sh weekly --format email_dashboard
+```
 
-For interactive SVG charts locally: `./run_dashboard.sh weekly --format dashboard`
+Output: `weekly_*_email.html` with charts as embedded PNG images (needs `cairosvg` + Cairo).
+
+- Dark theme matches the SVG dashboard
+- Tables use inline styles (Gmail-safe layout)
+- Embedded images use `data:image/png;base64,...`
+
+If Gmail strips images when pasting, attach the `.html` file or send via an HTML-capable mail tool.
 
 ---
 
@@ -145,8 +269,8 @@ For interactive SVG charts locally: `./run_dashboard.sh weekly --format dashboar
 | Cached daily data | `your_data/YYYY_MM/daily_stats.json` |
 | Training cache | `your_data/YYYY_MM/training_metrics.json` |
 | Activities | `your_data/YYYY_MM/activities.json` |
-| **Dashboard output (email)** | `your_data/dashboards/monthly_YYYY_MM.html` |
-| **Dashboard output (browser)** | `your_data/dashboards/monthly_YYYY_MM_dashboard.html` |
+| **Dashboard output (default SVG)** | `your_data/dashboards/monthly_YYYY_MM.html` |
+| **Dashboard output (Gmail PNG)** | `your_data/dashboards/monthly_YYYY_MM_email.html` |
 
 ---
 
@@ -155,8 +279,9 @@ For interactive SVG charts locally: `./run_dashboard.sh weekly --format dashboar
 | Script | Purpose |
 |--------|---------|
 | **`run_dashboard.sh`** | **Main entry:** `./run_dashboard.sh weekly\|monthly` |
-| `garmin_dashboard.py` | Build dashboard (`--format email\|dashboard`, `--mode`, `--fetch`) |
-| `garmin_email_html.py` | Email-format HTML renderer (used internally) |
+| `garmin_dashboard.py` | Build dashboard (`--format dashboard\|email_dashboard`, `--mode`, `--fetch`) |
+| `garmin_email_html.py` | PNG email renderer (`--format email_dashboard`) |
+| `run_dashboard_cron.sh` | Cron wrapper for Conda/Cairo (`--format email_dashboard`) |
 | `example.py` | Login + sanity check |
 | `download_last_month.py` | Full export (daily stats + GPX) |
 | `download_last_month_lite.py` | Lite export |
@@ -167,9 +292,9 @@ For interactive SVG charts locally: `./run_dashboard.sh weekly --format dashboar
 
 Static HTML — no JavaScript.
 
-**Email format:** same panels as dashboard; charts as embedded PNG images on dark theme.
+**Default (`dashboard`):** dark Grafana-style layout with inline SVG charts. No Cairo.
 
-**Dashboard format:** same metrics with live SVG charts.
+**Gmail (`email_dashboard`):** same panels; charts as embedded PNG images on dark theme.
 
 ---
 
@@ -184,14 +309,24 @@ Output: `your_data/YYYY_MM/` with GPX files (~1 min).
 
 ---
 
-## Troubleshooting
+## Cron / OpenClaw
 
-| Problem | Fix |
-|---------|-----|
-| Login fails | Run `python3 example.py` again; check MFA |
-| Empty dashboard | Run with `--fetch`; check tokens |
-| Charts missing in email HTML | macOS: `brew install cairo` then `pip install cairosvg` |
-| Rate limits | Retry later; scripts sleep between API calls |
+**Default (SVG dashboard, no Cairo):**
+
+```bash
+export HOME=/Users/youruser
+export GARMINTOKENS=$HOME/.garminconnect
+/bin/bash /Users/youruser/path/to/python-garminconnect-master/run_dashboard.sh weekly
+```
+
+**Gmail PNG (`email_dashboard`):** use `run_dashboard_cron.sh` when Cairo is installed via Conda:
+
+```bash
+export HOME=/Users/youruser
+/bin/bash /Users/youruser/path/to/python-garminconnect-master/run_dashboard_cron.sh weekly --format email_dashboard
+```
+
+Optional overrides: `CONDA_BASE`, `CONDA_ENV_NAME` (default `garmin`), `GARMINTOKENS`.
 
 ---
 

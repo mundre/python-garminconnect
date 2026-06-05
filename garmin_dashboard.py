@@ -8,8 +8,9 @@ Modes:
 
 Usage:
     source .venv/bin/activate
-    python3 garmin_dashboard.py --mode monthly              # email HTML (default)
-    python3 garmin_dashboard.py --mode weekly --format dashboard --open
+    python3 garmin_dashboard.py --mode monthly              # SVG dashboard (default, no Cairo)
+    python3 garmin_dashboard.py --mode weekly --format email_dashboard
+    python3 garmin_dashboard.py --mode weekly --open
 
 Requires tokens from example.py. Reuses your_data/*/daily_stats.json when available.
 """
@@ -664,14 +665,14 @@ def _hrv_status_color(status: str | None) -> str:
     return COLOR_NEUTRAL
 
 
-def output_name(mode: str, start: date, end: date, fmt: str = "email") -> str:
+def output_name(mode: str, start: date, end: date, fmt: str = "dashboard") -> str:
     if mode == "monthly":
         base = f"monthly_{start.strftime('%Y_%m')}.html"
     else:
         iso = start.isocalendar()
         base = f"weekly_{iso.year}_W{iso.week:02d}.html"
-    if fmt == "dashboard":
-        return base.replace(".html", "_dashboard.html")
+    if fmt == "email_dashboard":
+        return base.replace(".html", "_email.html")
     return base
 
 
@@ -1688,11 +1689,14 @@ def main() -> None:
     )
     parser.add_argument(
         "--format",
-        choices=["email", "dashboard"],
-        default="email",
-        help="email=Gmail-compatible HTML (default); dashboard=browser SVG charts",
+        choices=["dashboard", "email_dashboard", "email"],
+        default="dashboard",
+        help="dashboard=SVG HTML, dark theme, no Cairo (default); "
+        "email_dashboard=Gmail PNG charts (needs cairosvg/Cairo); "
+        "email=alias for email_dashboard",
     )
     args = parser.parse_args()
+    fmt = "email_dashboard" if args.format == "email" else args.format
 
     ref = date.fromisoformat(args.date) if args.date else date.today()
     mode, start, end = resolve_period(args.mode, ref)
@@ -1721,21 +1725,21 @@ def main() -> None:
     rows = extract_metrics(raw_days, training_by_day)
     period_avg_rhr = avg_rhr(rows)
     activity_summary = analyze_activities(activities, rows)
-    if args.format == "dashboard":
-        html = build_dashboard_html(
-            mode, start, end, rows, period_avg_rhr, activity_summary
-        )
-    else:
+    if fmt == "email_dashboard":
         from garmin_email_html import build_email_html
 
         html = build_email_html(
             mode, start, end, rows, period_avg_rhr, activity_summary
         )
+    else:
+        html = build_dashboard_html(
+            mode, start, end, rows, period_avg_rhr, activity_summary
+        )
 
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
-    out_path = OUTPUT_DIR / output_name(mode, start, end, args.format)
+    out_path = OUTPUT_DIR / output_name(mode, start, end, fmt)
     out_path.write_text(html, encoding="utf-8")
-    print(f"Dashboard saved ({args.format}): {out_path.resolve()}")
+    print(f"Dashboard saved ({fmt}): {out_path.resolve()}")
 
     if args.open:
         webbrowser.open(out_path.resolve().as_uri())

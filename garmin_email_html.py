@@ -1,4 +1,7 @@
-"""Email HTML dashboard — dark theme matching browser dashboard, charts as PNG images."""
+"""Email HTML dashboard — PNG chart images for Gmail (requires cairosvg/Cairo).
+
+Use --format email_dashboard. Default --format dashboard uses inline SVG instead.
+"""
 
 from __future__ import annotations
 
@@ -74,7 +77,7 @@ def _chart_img(svg: str, alt: str) -> str:
         )
     return (
         f'<p style="color:{MUTED};font-family:{FONT};font-size:12px;margin:8px 0;">'
-        f"Chart unavailable — run: pip install cairosvg</p>"
+        f"Chart unavailable — use --format email_dashboard with cairosvg/Cairo installed</p>"
     )
 
 

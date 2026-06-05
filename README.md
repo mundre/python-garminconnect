@@ -106,7 +106,7 @@ python3 ./demo.py      # comprehensive demo (130+ API methods)
 
 ## Health dashboard — one-time setup
 
-This repo includes scripts to generate weekly/monthly Garmin health dashboards (email-friendly HTML by default). Full usage is in [GARMIN_EXPORT.md](GARMIN_EXPORT.md).
+This repo includes scripts to generate weekly/monthly Garmin health dashboards. Default output is a dark-themed HTML file with inline SVG charts (no Cairo). Full usage is in [GARMIN_EXPORT.md](GARMIN_EXPORT.md).
 
 ### 1. Python 3.12+
 
@@ -125,27 +125,58 @@ source .venv/bin/activate        # Windows: .venv\Scripts\activate
 pip install -e ".[example]"
 ```
 
-### 3. Cairo (required for email-format chart images)
+### 3. Cairo (optional — only for `--format email_dashboard`)
 
-The default email HTML embeds dashboard charts as PNG images. **macOS** needs the Cairo library once:
+Gmail PNG charts need Cairo. **The default SVG dashboard does not.**
+
+**macOS (Sonoma+):**
 
 ```bash
 brew install cairo
 ```
 
-Linux (Debian/Ubuntu):
+Linux (Debian/Ubuntu) — install **system libraries first**, then Python packages:
 
 ```bash
-sudo apt update && sudo apt install libcairo2-dev pkg-config
+sudo apt update
+sudo apt install -y \
+  libcairo2-dev \
+  libpango1.0-dev \
+  libgdk-pixbuf-2.0-dev \
+  libffi-dev \
+  pkg-config \
+  libx11-dev \
+  libxrender-dev \
+  libxext-dev \
+  libxcb-render0-dev \
+  libxcb-shm0-dev \
+  libjpeg-dev \
+  libpng-dev
 ```
 
-Then ensure the Python package is installed (included in `[example]`):
+Then in your venv:
 
 ```bash
 pip install cairosvg
+# or reinstall everything:
+pip install -e ".[example]"
 ```
 
-Without Cairo, `--format email` still runs but charts show a “install cairosvg” placeholder. `--format dashboard` (browser SVG) does not need Cairo.
+Fedora/RHEL:
+
+```bash
+sudo dnf install cairo-devel pango-devel gdk-pixbuf2-devel libffi-devel pkg-config \
+  libX11-devel libXrender-devel libXext-devel libjpeg-turbo-devel libpng-devel
+```
+
+If `pip install cairosvg` still fails, install the prebuilt wheel instead of building from source:
+
+```bash
+pip install --upgrade pip
+pip install cairosvg --only-binary :all:
+```
+
+Without Cairo, `--format email_dashboard` still runs but charts show a “install cairosvg” placeholder. Default `--format dashboard` does not need Cairo.
 
 ### 4. Garmin login (once)
 
@@ -160,12 +191,12 @@ Tokens are saved to `~/.garminconnect/garmin_tokens.json`. Re-run if login expir
 
 ```bash
 chmod +x run_dashboard.sh
-./run_dashboard.sh weekly    # email HTML — last Mon–Sun
-./run_dashboard.sh monthly   # email HTML — previous calendar month
-./run_dashboard.sh weekly --format dashboard   # browser SVG version
+./run_dashboard.sh weekly    # SVG dashboard — last Mon–Sun
+./run_dashboard.sh monthly   # SVG dashboard — previous calendar month
+./run_dashboard.sh weekly --format email_dashboard   # Gmail PNG (needs Cairo)
 ```
 
-Output: `your_data/dashboards/` (`weekly_*.html`, `monthly_*.html`, or `*_dashboard.html`).
+Output: `your_data/dashboards/` (`weekly_*.html`, `monthly_*.html`, or `*_email.html` for Gmail PNG).
 
 ## 🛠️ Development
 
