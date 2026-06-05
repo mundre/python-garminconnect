@@ -106,7 +106,7 @@ python3 ./demo.py      # comprehensive demo (130+ API methods)
 
 ## Health dashboard — one-time setup
 
-This repo includes scripts to generate weekly/monthly Garmin health dashboards. Default output is a dark-themed HTML file with inline SVG charts (no Cairo). Full usage is in [GARMIN_EXPORT.md](GARMIN_EXPORT.md).
+This repo includes scripts to generate weekly/monthly Garmin health dashboards. Default output is email-friendly HTML with table layout and HTML bar charts (no Cairo). Full usage is in [GARMIN_EXPORT.md](GARMIN_EXPORT.md).
 
 ### 1. Python 3.12+
 
@@ -176,7 +176,7 @@ pip install --upgrade pip
 pip install cairosvg --only-binary :all:
 ```
 
-Without Cairo, `--format email_dashboard` still runs but charts show a “install cairosvg” placeholder. Default `--format dashboard` does not need Cairo.
+Without Cairo, `--format email_dashboard` still runs but charts show a placeholder. Default `email_friendly_only` and `dashboard` do not need Cairo.
 
 ### 4. Garmin login (once)
 
@@ -191,12 +191,13 @@ Tokens are saved to `~/.garminconnect/garmin_tokens.json`. Re-run if login expir
 
 ```bash
 chmod +x run_dashboard.sh
-./run_dashboard.sh weekly    # SVG dashboard — last Mon–Sun
-./run_dashboard.sh monthly   # SVG dashboard — previous calendar month
+./run_dashboard.sh weekly    # email-friendly HTML — last Mon–Sun
+./run_dashboard.sh monthly   # email-friendly HTML — previous calendar month
+./run_dashboard.sh weekly --format dashboard          # browser SVG
 ./run_dashboard.sh weekly --format email_dashboard   # Gmail PNG (needs Cairo)
 ```
 
-Output: `your_data/dashboards/` (`weekly_*.html`, `monthly_*.html`, or `*_email.html` for Gmail PNG).
+Output: `your_data/dashboards/` (`weekly_*.html`, `*_dashboard.html`, or `*_email_dashboard.html`).
 
 ## 🛠️ Development
 

@@ -2,9 +2,10 @@
 # Fetch Garmin data and generate a dashboard HTML file.
 #
 # Usage:
-#   ./run_dashboard.sh weekly              # SVG dashboard (default, no Cairo)
+#   ./run_dashboard.sh weekly              # email-friendly HTML (default, no Cairo)
 #   ./run_dashboard.sh monthly
-#   ./run_dashboard.sh weekly --format email_dashboard   # PNG for Gmail (needs Cairo)
+#   ./run_dashboard.sh weekly --format dashboard
+#   ./run_dashboard.sh weekly --format email_dashboard   # PNG charts (needs Cairo)
 #
 set -euo pipefail
 

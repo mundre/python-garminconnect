@@ -15,27 +15,31 @@ After [one-time setup](#one-time-setup-new-computer):
 
 Output is a **single HTML file** under `your_data/dashboards/`:
 
-| Mode | Default (`dashboard`) | Gmail PNG (`email_dashboard`) |
-|------|-------------------------|-------------------------------|
-| weekly | `weekly_2026_W22.html` | `weekly_2026_W22_email.html` |
-| monthly | `monthly_2026_05.html` | `monthly_2026_05_email.html` |
+| Mode | Default (`email_friendly_only`) | Gmail PNG (`email_dashboard`) | Browser (`dashboard`) |
+|------|----------------------------------|-------------------------------|------------------------|
+| weekly | `weekly_2026_W22.html` | `weekly_2026_W22_email_dashboard.html` | `weekly_2026_W22_dashboard.html` |
+| monthly | `monthly_2026_05.html` | `monthly_2026_05_email_dashboard.html` | `monthly_2026_05_dashboard.html` |
 
-**Default (`--format dashboard`):** Dark Grafana-style HTML with **inline SVG charts** — same panels and styling as the full dashboard. **No Cairo required.** Open in a browser; copy/paste into Gmail may not render SVG charts (use `email_dashboard` for that).
+**Default (`--format email_friendly_only`):** Dark theme, table layout, **HTML bar charts** — no Cairo. Paste-friendly for most email clients.
 
-**Gmail (`--format email_dashboard`):** Same layout with charts as **embedded PNG images** (needs `cairosvg` + Cairo). `--format email` is an alias.
+**Gmail PNG (`--format email_dashboard`):** Same panels with **embedded PNG chart images** (needs `cairosvg` + Cairo). `--format email` is an alias.
+
+**Browser (`--format dashboard`):** Full SVG dashboard with CSS grid — best in a browser.
 
 ```bash
-./run_dashboard.sh monthly                                    # SVG dashboard (default)
-./run_dashboard.sh weekly --format email_dashboard            # PNG for Gmail
-python3 garmin_dashboard.py --mode monthly --fetch --open     # open default in browser
+./run_dashboard.sh weekly                                    # email-friendly (default)
+./run_dashboard.sh weekly --format email_dashboard           # PNG for Gmail
+./run_dashboard.sh weekly --format dashboard                 # browser SVG
+python3 garmin_dashboard.py --mode monthly --fetch --open
 ```
 
 Equivalent Python:
 
 ```bash
 source .venv/bin/activate
-python3 garmin_dashboard.py --mode weekly --fetch                    # SVG (default)
+python3 garmin_dashboard.py --mode weekly --fetch                         # default
 python3 garmin_dashboard.py --mode monthly --fetch --format email_dashboard
+python3 garmin_dashboard.py --mode monthly --fetch --format dashboard
 python3 garmin_dashboard.py --mode auto --fetch
 ```
 
@@ -63,7 +67,7 @@ brew --version
 brew install python@3.12 git
 ```
 
-**Cairo is only needed for `--format email_dashboard`** (PNG charts for Gmail). The default SVG dashboard does not require it.
+**Cairo is only needed for `--format email_dashboard`** (PNG charts). The default `email_friendly_only` and `dashboard` formats do not require it.
 
 Verify Python:
 
@@ -126,10 +130,10 @@ Check output:
 
 ```bash
 ls -la your_data/dashboards/
-open your_data/dashboards/weekly_*.html    # default SVG dashboard
+open your_data/dashboards/weekly_*.html    # default email-friendly HTML
 ```
 
-Charts should render as SVG in the browser. For Gmail PNG charts: `./run_dashboard.sh weekly --format email_dashboard` (requires Cairo).
+For browser SVG: `./run_dashboard.sh weekly --format dashboard`. For Gmail PNG charts: `--format email_dashboard` (requires Cairo).
 
 ### Step 7: Ongoing use
 
@@ -242,21 +246,17 @@ Confirm HTML files appear in `your_data/dashboards/`.
 
 ## Using the HTML in Gmail
 
-**Default dashboard** (`weekly_*.html`) uses inline SVG — great in a browser; Gmail may not show charts when you paste.
+**Default (`email_friendly_only`)** — `./run_dashboard.sh weekly` — table layout with HTML bar charts. No Cairo. Works in most email clients when pasted.
 
-**Gmail PNG format** — generate with `--format email_dashboard`:
+**Gmail PNG (`email_dashboard`)** — best chart fidelity in Gmail:
 
 ```bash
 ./run_dashboard.sh weekly --format email_dashboard
 ```
 
-Output: `weekly_*_email.html` with charts as embedded PNG images (needs `cairosvg` + Cairo).
+Output: `weekly_*_email_dashboard.html` with embedded PNG images (needs Cairo).
 
-- Dark theme matches the SVG dashboard
-- Tables use inline styles (Gmail-safe layout)
-- Embedded images use `data:image/png;base64,...`
-
-If Gmail strips images when pasting, attach the `.html` file or send via an HTML-capable mail tool.
+**Browser (`dashboard`)** — open `weekly_*_dashboard.html` in a browser for full SVG charts. Not for email paste.
 
 ---
 
@@ -269,8 +269,9 @@ If Gmail strips images when pasting, attach the `.html` file or send via an HTML
 | Cached daily data | `your_data/YYYY_MM/daily_stats.json` |
 | Training cache | `your_data/YYYY_MM/training_metrics.json` |
 | Activities | `your_data/YYYY_MM/activities.json` |
-| **Dashboard output (default SVG)** | `your_data/dashboards/monthly_YYYY_MM.html` |
-| **Dashboard output (Gmail PNG)** | `your_data/dashboards/monthly_YYYY_MM_email.html` |
+| **Dashboard output (default)** | `your_data/dashboards/monthly_YYYY_MM.html` |
+| **Dashboard output (Gmail PNG)** | `your_data/dashboards/monthly_YYYY_MM_email_dashboard.html` |
+| **Dashboard output (browser)** | `your_data/dashboards/monthly_YYYY_MM_dashboard.html` |
 
 ---
 
@@ -279,7 +280,8 @@ If Gmail strips images when pasting, attach the `.html` file or send via an HTML
 | Script | Purpose |
 |--------|---------|
 | **`run_dashboard.sh`** | **Main entry:** `./run_dashboard.sh weekly\|monthly` |
-| `garmin_dashboard.py` | Build dashboard (`--format dashboard\|email_dashboard`, `--mode`, `--fetch`) |
+| `garmin_dashboard.py` | Build dashboard (`--format email_friendly_only\|email_dashboard\|dashboard`) |
+| `garmin_email_friendly_html.py` | Default email-friendly renderer (HTML bars, no Cairo) |
 | `garmin_email_html.py` | PNG email renderer (`--format email_dashboard`) |
 | `run_dashboard_cron.sh` | Cron wrapper for Conda/Cairo (`--format email_dashboard`) |
 | `example.py` | Login + sanity check |
@@ -292,9 +294,11 @@ If Gmail strips images when pasting, attach the `.html` file or send via an HTML
 
 Static HTML — no JavaScript.
 
-**Default (`dashboard`):** dark Grafana-style layout with inline SVG charts. No Cairo.
+**Default (`email_friendly_only`):** dark theme, table layout, HTML bar charts. No Cairo.
 
-**Gmail (`email_dashboard`):** same panels; charts as embedded PNG images on dark theme.
+**Gmail (`email_dashboard`):** same panels; charts as embedded PNG images.
+
+**Browser (`dashboard`):** full SVG dashboard with CSS grid.
 
 ---
 

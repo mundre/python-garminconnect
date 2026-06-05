@@ -1,6 +1,6 @@
 """Email HTML dashboard — PNG chart images for Gmail (requires cairosvg/Cairo).
 
-Use --format email_dashboard. Default --format dashboard uses inline SVG instead.
+Use --format email_dashboard. Default --format email_friendly_only uses HTML bars instead.
 """
 
 from __future__ import annotations

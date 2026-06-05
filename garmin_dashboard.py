@@ -8,9 +8,9 @@ Modes:
 
 Usage:
     source .venv/bin/activate
-    python3 garmin_dashboard.py --mode monthly              # SVG dashboard (default, no Cairo)
+    python3 garmin_dashboard.py --mode monthly              # email-friendly HTML (default)
+    python3 garmin_dashboard.py --mode weekly --format dashboard --open
     python3 garmin_dashboard.py --mode weekly --format email_dashboard
-    python3 garmin_dashboard.py --mode weekly --open
 
 Requires tokens from example.py. Reuses your_data/*/daily_stats.json when available.
 """
@@ -665,14 +665,16 @@ def _hrv_status_color(status: str | None) -> str:
     return COLOR_NEUTRAL
 
 
-def output_name(mode: str, start: date, end: date, fmt: str = "dashboard") -> str:
+def output_name(mode: str, start: date, end: date, fmt: str = "email_friendly_only") -> str:
     if mode == "monthly":
         base = f"monthly_{start.strftime('%Y_%m')}.html"
     else:
         iso = start.isocalendar()
         base = f"weekly_{iso.year}_W{iso.week:02d}.html"
     if fmt == "email_dashboard":
-        return base.replace(".html", "_email.html")
+        return base.replace(".html", "_email_dashboard.html")
+    if fmt == "dashboard":
+        return base.replace(".html", "_dashboard.html")
     return base
 
 
@@ -1689,11 +1691,11 @@ def main() -> None:
     )
     parser.add_argument(
         "--format",
-        choices=["dashboard", "email_dashboard", "email"],
-        default="dashboard",
-        help="dashboard=SVG HTML, dark theme, no Cairo (default); "
+        choices=["email_friendly_only", "email_dashboard", "dashboard", "email"],
+        default="email_friendly_only",
+        help="email_friendly_only=table HTML + bar charts, no Cairo (default); "
         "email_dashboard=Gmail PNG charts (needs cairosvg/Cairo); "
-        "email=alias for email_dashboard",
+        "dashboard=full browser SVG dashboard; email=alias for email_dashboard",
     )
     args = parser.parse_args()
     fmt = "email_dashboard" if args.format == "email" else args.format
@@ -1731,8 +1733,14 @@ def main() -> None:
         html = build_email_html(
             mode, start, end, rows, period_avg_rhr, activity_summary
         )
-    else:
+    elif fmt == "dashboard":
         html = build_dashboard_html(
+            mode, start, end, rows, period_avg_rhr, activity_summary
+        )
+    else:
+        from garmin_email_friendly_html import build_email_friendly_html
+
+        html = build_email_friendly_html(
             mode, start, end, rows, period_avg_rhr, activity_summary
         )
 
